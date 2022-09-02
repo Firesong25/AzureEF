@@ -13,18 +13,12 @@ namespace AzureEF
             AzureContext azureContext = new();
             LocalContext localContext = new LocalContext();
 
-            //// for testing purposes
-            //azureContext.Database.EnsureDeleted();
-            //azureContext.Database.EnsureCreated();
-            //SeedData();
-
-            await Task.Delay(1);  // stop compiler warnings on Linux
-         
 
             if (File.Exists("log.html"))
                 File.Delete("log.html");
 
             Stopwatch sw = Stopwatch.StartNew();
+            Stopwatch bigSw = Stopwatch.StartNew();
 
             try
             {
@@ -34,7 +28,7 @@ namespace AzureEF
                 LogMaker.Log($"Finding that {remoteAuctions.Count} are already on Azure took {sw.ElapsedMilliseconds} ms.");
                 sw.Restart();
                 List<WowAuction> localAuctions = localContext.WowAuctions.ToList();
-                LogMaker.Log($"Finding that {localAuctions} stored locally took {sw.ElapsedMilliseconds} ms.");
+                LogMaker.Log($"Finding that {localAuctions.Count} stored locally took {sw.ElapsedMilliseconds} ms.");
                 sw.Restart();
                 List<WowAuction> auctionsToUpload = new();
                 List<WowAuction> auctionsToUpdate = new();
@@ -53,21 +47,13 @@ namespace AzureEF
                 }
                 LogMaker.Log($"Finding we have {auctionsToUpload.Count} auctions to upload and {auctionsToUpdate.Count} to update took {sw.ElapsedMilliseconds} ms.");
                 sw.Restart();
-                azureContext.AddRange(auctionsToUpload);
-                azureContext.UpdateRange(auctionsToUpdate);
+                azureContext.UpdateRange(auctionsToUpdate.Take(100));
 
-                LogMaker.Log($"Getting ready to save auctions upload took {sw.ElapsedMilliseconds} ms.");
+                LogMaker.Log($"Getting ready to update 100 auctions upload took {sw.ElapsedMilliseconds} ms.");
                 sw.Restart();
-                azureContext.SaveChanges();
-                LogMaker.Log($"{azureContext.WowAuctions.Count()} remote auctions done in {sw.ElapsedMilliseconds} ms.");
-                sw.Restart();
-
-                LogMaker.Log($"We have {localContext.WowItems.Count()} to upload.");
-                azureContext.WowItems.AddRange(localContext.WowItems);
-                LogMaker.Log($"Saving changes took {sw.ElapsedMilliseconds} ms.");
-                sw.Restart();
-                azureContext.SaveChanges();
-                LogMaker.Log($"I would love to see this log entry! It took {sw.ElapsedMilliseconds} ms.");
+                await azureContext.SaveChangesAsync();
+                LogMaker.Log($"100 auctions updated in {sw.ElapsedMilliseconds} ms.");
+                LogMaker.Log($"I love to see this log entry! It took {GetReadableTimeByMs(bigSw.ElapsedMilliseconds)} ms.");
                 sw.Stop();
 
 
@@ -90,6 +76,16 @@ namespace AzureEF
 
 
 
+        }
+
+        static string GetReadableTimeByMs(long ms)
+        {
+            // Based on answers https://stackoverflow.com/questions/9993883/convert-milliseconds-to-human-readable-time-lapse
+            TimeSpan t = TimeSpan.FromMilliseconds(ms);
+            if (t.Hours > 0) return $"{t.Hours} hours {t.Minutes} minutes {t.Seconds} seconds";
+            else if (t.Minutes > 0) return $"{t.Minutes}minutes {t.Seconds} seconds";
+            else if (t.Seconds > 0) return $"{t.Seconds} seconds";
+            else return $"{t.Milliseconds} milliseconds";
         }
 
         static void SeedData()
