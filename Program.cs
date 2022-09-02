@@ -25,10 +25,10 @@ namespace AzureEF
 
                 List<WowAuction> remoteAuctions = azureContext.WowAuctions.ToList();
 
-                LogMaker.Log($"Finding that {remoteAuctions.Count} are already on Azure took {sw.ElapsedMilliseconds} ms.");
+                LogMaker.Log($"Finding that {remoteAuctions.Count} are already on Azure took {GetReadableTimeByMs(sw.ElapsedMilliseconds)} ms.");
                 sw.Restart();
                 List<WowAuction> localAuctions = localContext.WowAuctions.ToList();
-                LogMaker.Log($"Finding that {localAuctions.Count} stored locally took {sw.ElapsedMilliseconds} ms.");
+                LogMaker.Log($"Finding that {localAuctions.Count} stored locally took {GetReadableTimeByMs(sw.ElapsedMilliseconds)} ms.");
                 sw.Restart();
                 List<WowAuction> auctionsToUpload = new();
                 List<WowAuction> auctionsToUpdate = new();
@@ -45,15 +45,15 @@ namespace AzureEF
                         auctionsToUpdate.Add(upload);
                     }
                 }
-                LogMaker.Log($"Finding we have {auctionsToUpload.Count} auctions to upload and {auctionsToUpdate.Count} to update took {sw.ElapsedMilliseconds} ms.");
+                LogMaker.Log($"Finding we have {auctionsToUpload.Count} auctions to upload and {auctionsToUpdate.Count} to update took {GetReadableTimeByMs(sw.ElapsedMilliseconds)} ms.");
                 sw.Restart();
                 azureContext.UpdateRange(auctionsToUpdate.Take(100));
 
-                LogMaker.Log($"Getting ready to update 100 auctions upload took {sw.ElapsedMilliseconds} ms.");
+                LogMaker.Log($"Getting ready to update 100 auctions upload took {GetReadableTimeByMs(sw.ElapsedMilliseconds)} ms.");
                 sw.Restart();
                 await azureContext.SaveChangesAsync();
-                LogMaker.Log($"100 auctions updated in {sw.ElapsedMilliseconds} ms.");
-                LogMaker.Log($"I love to see this log entry! It took {GetReadableTimeByMs(bigSw.ElapsedMilliseconds)} ms.");
+                LogMaker.Log($"100 auctions updated in {GetReadableTimeByMs(sw.ElapsedMilliseconds)} ms.");
+                LogMaker.Log($"I love to see this log entry! It took {GetReadableTimeByMs(bigSw.ElapsedMilliseconds)}.");
                 sw.Stop();
 
 
@@ -82,9 +82,9 @@ namespace AzureEF
         {
             // Based on answers https://stackoverflow.com/questions/9993883/convert-milliseconds-to-human-readable-time-lapse
             TimeSpan t = TimeSpan.FromMilliseconds(ms);
-            if (t.Hours > 0) return $"{t.Hours} hours {t.Minutes} minutes {t.Seconds} seconds";
-            else if (t.Minutes > 0) return $"{t.Minutes}minutes {t.Seconds} seconds";
-            else if (t.Seconds > 0) return $"{t.Seconds} seconds";
+            if (t.Hours > 0) return $"{t.Hours} hours {t.Minutes} minutes {t.Seconds} seconds {t.Milliseconds} milliseconds";
+            else if (t.Minutes > 0) return $"{t.Minutes}minutes {t.Seconds} seconds {t.Milliseconds} milliseconds";
+            else if (t.Seconds > 0) return $"{t.Seconds} seconds {t.Milliseconds} milliseconds";
             else return $"{t.Milliseconds} milliseconds";
         }
 
